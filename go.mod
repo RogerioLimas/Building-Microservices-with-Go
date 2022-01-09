@@ -1,3 +1,3 @@
-module github.com/rogeriolimas/go-examples/Building-Microservices-with-Go
+module github.com/RogerioLimas/Building-Microservices-with-Go
 
 go 1.17
