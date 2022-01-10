@@ -14,35 +14,37 @@ import (
 func main() {
 	l := log.New(os.Stdout, "product-api\t", log.LstdFlags)
 
-	hh := handlers.NewHello(l)
-	hg := handlers.NewGoodBye(l)
+	// Create the handler
+	hp := handlers.NewProducts(l)
 
-	
+	// Create a new server mux and register the handlers
 	mux := http.NewServeMux()
-	mux.Handle("/", hh)
-	mux.Handle("/goodbye", hg)
-	
-	srv := http.Server {
-		Addr: ":8080",
-		Handler: mux,
-		ReadTimeout: 10 * time.Millisecond,
-		WriteTimeout: 10 * time.Millisecond,
-		IdleTimeout: 120 * time.Millisecond,
+	mux.Handle("/", hp)
+
+	// Create a new server
+	srv := http.Server{
+		Addr:         ":8080",                // Bind the address
+		Handler:      mux,                    // Set the default handler
+		ErrorLog:     l,                      // Set the logger for the server
+		ReadTimeout:  10 * time.Millisecond,  // Max time to read request from the client
+		WriteTimeout: 10 * time.Millisecond,  // Max time to write response to the server
+		IdleTimeout:  120 * time.Millisecond, // Set the idle timeout for connections using TCP Keep-Alive 
 	}
 
+	// Start the server
 	go func() {
 		log.Fatal(srv.ListenAndServe())
 	}()
 
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt)
-	signal.Notify(sigChan, os.Kill)
+	// Trap sigterm or interrupt and gracefully shutdown the server
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Kill)
 
-
-	sig := <- sigChan
+	sig := <-c
 	log.Println("Received terminate, graceful shutdown", sig)
-	
-	ctx, _ := context.WithTimeout(context.Background(), 40 * time.Second)
+
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	srv.Shutdown(ctx)
 
 }
