@@ -9,22 +9,33 @@ import (
 	"time"
 
 	"github.com/RogerioLimas/Building-Microservices-with-Go/handlers"
+	"github.com/gorilla/mux"
 )
 
 func main() {
 	l := log.New(os.Stdout, "product-api\t", log.LstdFlags)
 
 	// Create the handler
-	hp := handlers.NewProducts(l)
+	ph := handlers.NewProducts(l)
 
-	// Create a new server mux and register the handlers
-	mux := http.NewServeMux()
-	mux.Handle("/", hp)
+	// Create a new server sm and register the handlers
+	sm := mux.NewRouter()
+
+	getRouter := sm.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("/", ph.GetProducts)
+	
+	putRouter := sm.Methods(http.MethodPut).Subrouter()
+	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProducts)
+	putRouter.Use(ph.MiddlewareValidateProduct)
+
+	postRouter := sm.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/", ph.AddProduct)
+	postRouter.Use(ph.MiddlewareValidateProduct)
 
 	// Create a new server
 	srv := http.Server{
 		Addr:         ":8080",                // Bind the address
-		Handler:      mux,                    // Set the default handler
+		Handler:      sm,                    // Set the default handler
 		ErrorLog:     l,                      // Set the logger for the server
 		ReadTimeout:  10 * time.Millisecond,  // Max time to read request from the client
 		WriteTimeout: 10 * time.Millisecond,  // Max time to write response to the server
